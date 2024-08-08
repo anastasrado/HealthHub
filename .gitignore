@@ -48,3 +48,6 @@ npm-debug.log*
 
 # Optional yarn-debug log file
 yarn-debug.log*
+
+# Logs
+backend/logs
