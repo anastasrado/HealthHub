@@ -1,0 +1,50 @@
+# Node.js
+node_modules/
+
+# Logs
+*.log
+
+# Dependency directories
+backend/node_modules/
+frontend-web/node_modules/
+frontend-mobile/node_modules/
+
+# Build output directories
+backend/dist/
+frontend-web/build/
+frontend-mobile/android/
+frontend-mobile/ios/
+
+# Environment files
+*.env
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# React Native
+frontend-mobile/.gradle/
+frontend-mobile/.idea/
+frontend-mobile/.vscode/
+
+# React build artifacts
+frontend-web/.next/
+frontend-web/out/
+frontend-web/.cache/
+frontend-web/.eslintcache
+
+# Optional npm cache directory
+.npm/
+
+# Optional Yarn cache directory
+.yarn/
+
+# Optional npm-debug log file
+npm-debug.log*
+
+# Optional yarn-debug log file
+yarn-debug.log*
