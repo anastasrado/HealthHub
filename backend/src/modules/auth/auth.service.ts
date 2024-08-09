@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -27,16 +28,21 @@ export class AuthService {
     };
   }
 
-  async register(email: string, password: string, role: string) {
+  async register(
+    email: string,
+    password: string,
+    role: UserRole,
+    fullName: string,
+  ) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await this.prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         role,
+        fullName,
       },
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user;
     return result;
   }

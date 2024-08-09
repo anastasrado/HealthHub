@@ -53,6 +53,7 @@ export class AuthController {
       registerDto.email,
       registerDto.password,
       registerDto.role,
+      registerDto.fullName,
     );
   }
 
