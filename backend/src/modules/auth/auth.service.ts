@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
@@ -13,12 +14,15 @@ import { DoctorProfileDto } from './dto/doctor-profile.dto';
 import { PatientProfileDto } from './dto/patient-profile.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async validateUser(
@@ -27,6 +31,11 @@ export class AuthService {
   ): Promise<UserResponseDto | null> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (user && (await bcrypt.compare(password, user.password))) {
+      if (!user.isEmailVerified) {
+        throw new UnauthorizedException(
+          'Please verify your email before logging in',
+        );
+      }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...result } = user;
       return result as UserResponseDto;
@@ -43,6 +52,7 @@ export class AuthService {
 
   async register(registerDto: RegisterDto): Promise<UserResponseDto> {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const verificationToken = uuidv4();
 
     return this.prisma.$transaction(async (prisma) => {
       const user = await prisma.user.create({
@@ -50,9 +60,11 @@ export class AuthService {
           email: registerDto.email,
           password: hashedPassword,
           role: registerDto.role,
+          verificationToken,
         },
       });
 
+      // Create related profile based on role
       switch (registerDto.role) {
         case UserRole.PATIENT:
           await prisma.patient.create({
@@ -89,17 +101,36 @@ export class AuthService {
           throw new BadRequestException('Invalid user role');
       }
 
+      // Send verification email
+      await this.emailService.sendVerificationEmail(
+        user.email,
+        verificationToken,
+      );
+
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password: _, ...userResponse } = user;
+      const { password: _, verificationToken: __, ...userResponse } = user;
       return userResponse as UserResponseDto;
+    });
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { verificationToken: token },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Invalid verification token');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isEmailVerified: true, verificationToken: null },
     });
   }
 
   async getProfile(
     userId: number,
   ): Promise<PatientProfileDto | DoctorProfileDto | AdminProfileDto> {
-    console.log("SERVICE");
-    console.log(userId);
     const user = await this.prisma.user.findUnique({
       where: { id: userId }, // Corrected: Use id instead of undefined
       include: {

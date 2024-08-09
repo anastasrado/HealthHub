@@ -13,6 +13,8 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "role" "UserRole" NOT NULL,
+    "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "verificationToken" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -69,6 +71,9 @@ CREATE TABLE "MedicalHistory" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_verificationToken_key" ON "User"("verificationToken");
 
 -- CreateIndex
 CREATE INDEX "User_email_idx" ON "User"("email");

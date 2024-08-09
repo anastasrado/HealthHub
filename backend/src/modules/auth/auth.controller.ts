@@ -6,6 +6,7 @@ import {
   Get,
   UseGuards,
   Req,
+  Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
@@ -60,6 +61,14 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Get('verify/:token')
+  @ApiOperation({ summary: 'Verify email' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid verification token' })
+  async verifyEmail(@Param('token') token: string): Promise<void> {
+    await this.authService.verifyEmail(token);
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -72,8 +81,6 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   async getProfile(@Req() req: Request): Promise<ProfileDto> {
     const user = req.user as { userId: number; email: string; role: string };
-    console.log("USER");
-    console.log(user);
     const profile = await this.authService.getProfile(user.userId);
     return { profile };
   }

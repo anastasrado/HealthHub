@@ -9,6 +9,7 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { PatientModule } from './modules/patient/patient.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PatientModule } from './modules/patient/patient.module';
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     PatientModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [

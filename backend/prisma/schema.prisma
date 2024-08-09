@@ -36,14 +36,16 @@ enum MedicalCondition {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  role      UserRole
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  patient   Patient?
-  doctor    Doctor?
+  id                Int       @id @default(autoincrement())
+  email             String    @unique
+  password          String
+  role              UserRole
+  isEmailVerified   Boolean   @default(false)
+  verificationToken String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  patient           Patient?
+  doctor            Doctor?
 
   @@index([email])
 }
