@@ -20,13 +20,14 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('HealthHub API')
-    .setDescription('API documentation for HealthHub')
+    .setDescription('The HealthHub API description')
     .setVersion('1.0')
-    .addTag('users')
+    .addBearerAuth()
+    .addTag('auth') // Add this line to ensure 'auth' tag is recognized
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(3000);
 }
 bootstrap();
