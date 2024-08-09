@@ -1,53 +1,44 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
-import { UserService } from './user.service';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBody,
-  ApiParam,
+  ApiUnauthorizedResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CreateUserDto, UserResponseDto } from './dto/create-user.dto';
+import { Roles } from '../auth/decorators/role.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/role.guard';
 
 @ApiTags('users')
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class UserController {
-  constructor(private userService: UserService) {}
-
-  @Post()
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({
-    status: 201,
-    description: 'The user has been successfully created.',
-    type: UserResponseDto,
-  })
-  @ApiBody({ type: CreateUserDto })
-  async createUser(
-    @Body() createUserDto: CreateUserDto,
-  ): Promise<UserResponseDto> {
-    return this.userService.createUser(createUserDto);
+  @Get('patient-data')
+  @Roles('patient')
+  @ApiOperation({ summary: 'Get patient data' })
+  @ApiResponse({ status: 200, description: 'Return patient data' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  getPatientData() {
+    return 'This is protected patient data';
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'The user details.',
-    type: UserResponseDto,
-  })
-  @ApiParam({ name: 'id', type: 'integer', description: 'User ID' })
-  async getUser(@Param('id') id: number): Promise<UserResponseDto> {
-    return this.userService.getUser(id);
+  @Get('doctor-data')
+  @Roles('doctor')
+  @ApiOperation({ summary: 'Get doctor data' })
+  @ApiResponse({ status: 200, description: 'Return doctor data' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  getDoctorData() {
+    return 'This is protected doctor data';
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({
-    status: 200,
-    description: 'Array of all users.',
-    type: [UserResponseDto],
-  })
-  async getAllUsers(): Promise<UserResponseDto[]> {
-    return this.userService.getAllUsers();
+  @Get('admin-data')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get admin data' })
+  @ApiResponse({ status: 200, description: 'Return admin data' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  getAdminData() {
+    return 'This is protected admin data';
   }
 }
