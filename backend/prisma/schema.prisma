@@ -19,12 +19,81 @@ enum UserRole {
   ADMIN
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MedicalCondition {
+  DIABETES
+  HYPERTENSION
+  ASTHMA
+  ARTHRITIS
+  CANCER
+  HEART_DISEASE
+  OTHER
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   password  String
   role      UserRole
-  fullName  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  patient   Patient?
+  doctor    Doctor?
+
+  @@index([email])
+}
+
+model Patient {
+  id             Int              @id @default(autoincrement())
+  user           User             @relation(fields: [userId], references: [id])
+  userId         Int              @unique
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime
+  gender         Gender
+  contactNumber  String?
+  address        String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  medicalHistory MedicalHistory[]
+
+  @@index([lastName, firstName])
+}
+
+model Doctor {
+  id                Int      @id @default(autoincrement())
+  user              User     @relation(fields: [userId], references: [id])
+  userId            Int      @unique
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime
+  gender            Gender
+  contactNumber     String?
+  address           String?
+  specialty         String
+  yearsOfExperience Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([specialty])
+}
+
+model MedicalHistory {
+  id            Int              @id @default(autoincrement())
+  patient       Patient          @relation(fields: [patientId], references: [id])
+  patientId     Int
+  condition     MedicalCondition
+  diagnosisDate DateTime
+  treatment     String?
+  notes         String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([patientId, condition])
 }

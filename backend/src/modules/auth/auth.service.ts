@@ -1,8 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RegisterDto } from './dto/register.dto';
+import { AdminProfileDto } from './dto/admin-profile.dto';
+import { DoctorProfileDto } from './dto/doctor-profile.dto';
+import { PatientProfileDto } from './dto/patient-profile.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -11,39 +21,132 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<UserResponseDto | null> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (user && (await bcrypt.compare(password, user.password))) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-      return result;
+      const { password: _, ...result } = user;
+      return result as UserResponseDto;
     }
     return null;
   }
 
-  async login(user: any) {
+  async login(user: UserResponseDto): Promise<LoginResponseDto> {
     const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
     };
   }
 
-  async register(
-    email: string,
-    password: string,
-    role: UserRole,
-    fullName: string,
-  ) {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        role,
-        fullName,
+  async register(registerDto: RegisterDto): Promise<UserResponseDto> {
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+
+    return this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.create({
+        data: {
+          email: registerDto.email,
+          password: hashedPassword,
+          role: registerDto.role,
+        },
+      });
+
+      switch (registerDto.role) {
+        case UserRole.PATIENT:
+          await prisma.patient.create({
+            data: {
+              userId: user.id,
+              firstName: registerDto.firstName,
+              lastName: registerDto.lastName,
+              dateOfBirth: new Date(registerDto.dateOfBirth),
+              gender: registerDto.gender,
+              contactNumber: registerDto.contactNumber,
+              address: registerDto.address,
+            },
+          });
+          break;
+        case UserRole.DOCTOR:
+          await prisma.doctor.create({
+            data: {
+              userId: user.id,
+              firstName: registerDto.firstName,
+              lastName: registerDto.lastName,
+              dateOfBirth: new Date(registerDto.dateOfBirth),
+              gender: registerDto.gender,
+              contactNumber: registerDto.contactNumber,
+              address: registerDto.address,
+              specialty: registerDto.specialty,
+              yearsOfExperience: registerDto.yearsOfExperience,
+            },
+          });
+          break;
+        case UserRole.ADMIN:
+          // No additional model creation for admin
+          break;
+        default:
+          throw new BadRequestException('Invalid user role');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...userResponse } = user;
+      return userResponse as UserResponseDto;
+    });
+  }
+
+  async getProfile(
+    userId: number,
+  ): Promise<PatientProfileDto | DoctorProfileDto | AdminProfileDto> {
+    console.log("SERVICE");
+    console.log(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }, // Corrected: Use id instead of undefined
+      include: {
+        patient: true,
+        doctor: true,
       },
     });
-    const { password: _, ...result } = user;
-    return result;
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    switch (user.role) {
+      case UserRole.PATIENT:
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.patient?.firstName,
+          lastName: user.patient?.lastName,
+          dateOfBirth: user.patient?.dateOfBirth,
+          gender: user.patient?.gender,
+          contactNumber: user.patient?.contactNumber,
+          address: user.patient?.address,
+        } as PatientProfileDto;
+      case UserRole.DOCTOR:
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.doctor?.firstName,
+          lastName: user.doctor?.lastName,
+          dateOfBirth: user.doctor?.dateOfBirth,
+          gender: user.doctor?.gender,
+          contactNumber: user.doctor?.contactNumber,
+          address: user.doctor?.address,
+          specialty: user.doctor?.specialty,
+          yearsOfExperience: user.doctor?.yearsOfExperience,
+        } as DoctorProfileDto;
+      case UserRole.ADMIN:
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        } as AdminProfileDto;
+      default:
+        throw new NotFoundException('Invalid user role');
+    }
   }
 }
