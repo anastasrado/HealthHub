@@ -23,7 +23,6 @@ async function bootstrap() {
     .setDescription('The HealthHub API description')
     .setVersion('1.0')
     .addBearerAuth()
-    .addTag('auth') // Add this line to ensure 'auth' tag is recognized
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
