@@ -31,6 +31,7 @@ import { ResponseService } from 'src/common/services/response.service';
 import { AdminProfileDto } from './dto/admin-profile.dto';
 import { DoctorProfileDto } from './dto/doctor-profile.dto';
 import { PatientProfileDto } from './dto/patient-profile.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -45,13 +46,20 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Return JWT access token',
-    type: UserResponseDto,
+    type: LoginResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   async login(
     @Body() loginDto: LoginDto,
-  ): Promise<StandardResponse<UserResponseDto>> {
-    return this.authService.validateUser(loginDto.email, loginDto.password);
+  ): Promise<StandardResponse<LoginResponseDto>> {
+    // First validate the user
+    const validatedUser = await this.authService.validateUser(
+      loginDto.email,
+      loginDto.password,
+    );
+
+    // If the user is valid, log them in to generate the JWT token
+    return this.authService.login(validatedUser.data);
   }
 
   @Post('register')
