@@ -45,7 +45,7 @@ To set up HealthHub locally, follow these steps:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/healthhub.git
+   git clone https://github.com/anastasrado/HealthHub.git
    cd healthhub/backend
    ```
 
