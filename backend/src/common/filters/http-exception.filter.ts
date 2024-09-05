@@ -7,10 +7,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { StandardResponse } from '../dto/standard-response.dto';
+import { ResponseService } from '../services/response.service';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
+
+  constructor(private readonly responseService: ResponseService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -33,15 +37,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : '',
     );
 
-    // Send user-friendly error response
-    response.status(status).json({
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      message:
-        status === HttpStatus.INTERNAL_SERVER_ERROR
-          ? 'Something went wrong. Please try again later.'
-          : message,
-    });
+    // Create a standardized error response
+    const errorResponse: StandardResponse<null> = this.responseService.error(
+      status === HttpStatus.INTERNAL_SERVER_ERROR
+        ? 'Something went wrong. Please try again later.'
+        : message,
+    );
+
+    // Add details if available
+    if (exception instanceof HttpException) {
+      const responseMessage = exception.getResponse();
+      if (
+        typeof responseMessage === 'object' &&
+        responseMessage.hasOwnProperty('message')
+      ) {
+        errorResponse.errors = [(responseMessage as any).message]; // Include additional error details
+      }
+    }
+
+    // Send the standardized error response
+    response.status(status).json(errorResponse);
   }
 }
